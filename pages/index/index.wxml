@@ -1,0 +1,45 @@
+<!--pages/index/index.wxml-->
+<view class="container" style="{{containerStyle}}">
+  <!-- 开始游戏按钮（只在游戏未开始时显示） -->
+  <view class="start-overlay" wx:if="{{!isGameStart}}">
+    <view class="start-content">
+      <text class="start-title">宫女变贵妃</text>
+      <button class="start-btn" bindtap="onGameStart">开始游戏</button>
+      <text class="start-tip">点击开始，享受游戏乐趣</text>
+    </view>
+  </view>
+
+  <view class="header" wx:if="{{isGameStart}}">
+    <text class="title">宫女变贵妃</text>
+    <text class="score">等级: {{score}}</text>
+  </view>
+
+  <view class="board-wrapper" style="border-color: {{currentBorderColor}};" wx:if="{{isGameStart}}">
+    <view class="board" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd" catchtouchmove="onTouchMove">
+      <view class="grid-row" wx:for="{{board}}" wx:for-index="rowIndex">
+        <view class="grid-cell" wx:for="{{item}}" wx:for-index="colIndex">
+          <view class="tile {{item.level ? 'tile-' + item.level : ''}}" wx:if="{{item}}">
+            <image class="tile-image" src="{{item.image}}" mode="scaleToFill"></image>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="controls" wx:if="{{isGameStart}}">
+    <button class="restart-btn" bindtap="onRestart">重新开始</button>
+  </view>
+
+  <!-- Unlock Overlay -->
+  <view class="overlay unlock-overlay {{showUnlock ? 'show' : ''}}" wx:if="{{showUnlock}}">
+    <view class="overlay-bg"></view>
+    <image class="unlock-image" src="https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/unlock.png" mode="aspectFit"></image>
+  </view>
+
+  <!-- Game Over Overlay -->
+  <view class="overlay gameover-overlay {{gameOver ? 'show' : ''}}" wx:if="{{gameOver}}">
+    <view class="overlay-bg"></view>
+    <image class="gameover-image" src="https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/gameover.png" mode="aspectFit"></image>
+  </view>
+</view>
+

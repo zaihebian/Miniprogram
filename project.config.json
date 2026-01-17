@@ -1,0 +1,21 @@
+{
+  "description": "宫女变贵妃 - 基础运行配置",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "bundle": false,
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "lazyCodeLoading": "requiredComponents",
+    "minifyWXSS": true,
+    "ignoreUploadUnusedFiles": false,
+    "useStaticServer": false,
+    "autoAudits": true
+  },
+  "libVersion": "3.13.1",
+  "appid": "wx5c7fe01fa06707c5",
+  "projectname": "宫女变贵妃"
+}

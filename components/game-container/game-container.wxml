@@ -1,0 +1,2 @@
+<!--components/game-container/game-container.wxml-->
+<slot></slot>
