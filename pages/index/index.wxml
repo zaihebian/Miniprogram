@@ -1,5 +1,10 @@
 <!--pages/index/index.wxml-->
 <view class="container" style="{{containerStyle}}">
+  <!-- 音效开关按钮（右上角） -->
+  <view class="sound-toggle" wx:if="{{isGameStart}}" bindtap="toggleSound">
+    <text class="sound-icon">{{soundEnabled ? '🔊' : '🔇'}}</text>
+  </view>
+
   <!-- 开始游戏按钮（只在游戏未开始时显示） -->
   <view class="start-overlay" wx:if="{{!isGameStart}}">
     <view class="start-content">
@@ -10,8 +15,10 @@
   </view>
 
   <view class="header" wx:if="{{isGameStart}}">
-    <text class="title">宫女变贵妃</text>
-    <text class="score">等级: {{score}}</text>
+    <view class="header-content">
+      <text class="title">宫女变贵妃</text>
+      <text class="score">官衔: {{rankTitle}}</text>
+    </view>
   </view>
 
   <view class="board-wrapper" style="border-color: {{currentBorderColor}};" wx:if="{{isGameStart}}">

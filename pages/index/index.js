@@ -13,9 +13,11 @@ Page({
     gameOver: false,
     score: 0, // Max level reached
     maxLevelReached: 0,
+    rankTitle: '宫女', // 当前官衔
     currentThemeLevel: 3,
     showUnlock: false,
     isGameStart: false, // 标记游戏是否已开始（用于手机端音频播放）
+    soundEnabled: true, // 音效开关状态
     currentBgImage: 'https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/theme_1.png',
     currentBorderColor: '#FFD700',
     containerStyle: "background-image: url('https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/theme_1.png');",
@@ -35,6 +37,41 @@ Page({
     { level: 7, bgImage: 'https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/theme_5.png', borderColor: '#C71585' },
     { level: 8, bgImage: 'https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/theme_6.png', borderColor: '#8B008B' }
   ],
+
+  /**
+   * 官衔映射表
+   */
+  rankTitles: {
+    1: '宫女',
+    2: '秀女',
+    3: '官女子',
+    4: '答应',
+    5: '常在',
+    6: '贵人',
+    7: '嫔',
+    8: '妃',
+    9: '贵妃',
+    10: '皇贵妃',
+    11: '皇后',
+    12: '天后',
+    13: '女帝',
+    14: '九天玄女',
+    15: '昆仑仙姬',
+    16: '万法神后',
+    17: '瑶池圣母'
+  },
+
+  /**
+   * 获取官衔名称
+   */
+  getRankTitle(level) {
+    // 等级 0 显示"宫女"
+    if (level <= 0) {
+      return '宫女';
+    }
+    // 等级 1 及以上显示对应官衔
+    return this.rankTitles[level] || `等级${level}`;
+  },
 
   /**
    * Audio contexts
@@ -87,6 +124,7 @@ Page({
       gameOver: false,
       score: 0,
       maxLevelReached: 0,
+      rankTitle: '宫女', // 初始为宫女
       currentThemeLevel: 3,
       showUnlock: false,
       // 注意：不重置 isGameStart，保持游戏已开始状态
@@ -106,7 +144,7 @@ Page({
     this.bgmAudio = wx.createInnerAudioContext();
     this.bgmAudio.src = baseUrl + 'bgm.MP3';
     this.bgmAudio.loop = true;
-    this.bgmAudio.volume = 0.7; // 设置音量
+    this.bgmAudio.volume = 0.6; // 设置音量
     this.bgmAudio.onError((err) => {
       if (!this.isPageLoaded) return;
       console.error('BGM audio error:', err);
@@ -191,7 +229,7 @@ Page({
       
       this.bgmAudio.src = baseUrl + 'bgm.MP3';
       this.bgmAudio.loop = true;
-      this.bgmAudio.volume = 1.0; // 设置为最大音量测试
+      this.bgmAudio.volume = 0.6; // 设置音量
       
       // 添加事件监听（添加页面加载检查）
       this.bgmAudio.onCanplay(() => {
@@ -259,11 +297,18 @@ Page({
    * Play background music
    */
   playBGM() {
-    if (this.bgmAudio && this.isPageLoaded) {
+    if (this.bgmAudio && this.isPageLoaded && this.data.soundEnabled) {
       try {
         this.bgmAudio.play();
       } catch (err) {
         console.error('Failed to play BGM:', err);
+      }
+    } else if (this.bgmAudio && !this.data.soundEnabled) {
+      // 如果音效已关闭，停止背景音乐
+      try {
+        this.bgmAudio.stop();
+      } catch (err) {
+        console.error('Failed to stop BGM:', err);
       }
     }
   },
@@ -272,7 +317,7 @@ Page({
    * Play sound effect (音效播放，由用户操作触发，手机端允许)
    */
   playSound(audioContext) {
-    if (audioContext && this.isPageLoaded && this.data.isGameStart) {
+    if (audioContext && this.isPageLoaded && this.data.isGameStart && this.data.soundEnabled) {
       try {
         // 停止当前播放
         audioContext.stop();
@@ -288,6 +333,43 @@ Page({
         console.log('Sound effect playing');
       } catch (err) {
         console.error('Failed to play sound:', err);
+      }
+    }
+  },
+
+  /**
+   * Play level-specific sound effect (播放等级特定音效)
+   * 当第一次达到某个等级时播放对应的音效
+   */
+  playLevelSound(level) {
+    if (!this.isPageLoaded || !this.data.isGameStart || !this.data.soundEnabled) return;
+    
+    // 只在等级 3-13 之间播放
+    if (level >= 3 && level <= 13) {
+      try {
+        const baseUrl = 'https://hougong721-1308856491.cos.ap-guangzhou.myqcloud.com/';
+        // 动态创建音频实例
+        const levelAudio = wx.createInnerAudioContext();
+        levelAudio.src = baseUrl + `Level${level}.mp3`;
+        levelAudio.volume = 1.5;
+        
+        // 播放音效
+        levelAudio.play();
+        console.log(`Playing Level${level} sound`);
+        
+        // 播放完成后销毁实例，避免内存泄漏
+        levelAudio.onEnded(() => {
+          levelAudio.destroy();
+        });
+        
+        levelAudio.onError((err) => {
+          console.error(`Level${level} audio error:`, err);
+          // 尝试大写文件名
+          levelAudio.src = baseUrl + `Level${level}.MP3`;
+          levelAudio.play();
+        });
+      } catch (err) {
+        console.error(`Failed to play Level${level} sound:`, err);
       }
     }
   },
@@ -730,12 +812,12 @@ Page({
     this.setData({ gameOver: true });
     this.playSound(this.gameoverAudio);
     
-    // Auto-restart after showing game over overlay for 2 seconds
+    // Auto-restart after showing game over overlay for 7 seconds
     this.safeSetTimeout(() => {
       if (this.isPageLoaded) {
         this.onRestart();
       }
-    }, 2000);
+    }, 7000);
   },
 
   /**
@@ -748,8 +830,14 @@ Page({
 
     // Check if unlock effect should trigger
     if (newLevel >= 3 && newLevel > this.data.maxLevelReached) {
-      // Play unlock sound
-      this.playSound(this.unlockAudio);
+      // 播放等级特定音效（Level3.mp3 到 Level13.mp3）
+      // 如果等级在 3-13 之间，播放对应等级音效；否则播放通用 unlock 音效
+      if (newLevel >= 3 && newLevel <= 13) {
+        this.playLevelSound(newLevel);
+      } else {
+        // 等级超过 13，使用通用解锁音效
+        this.playSound(this.unlockAudio);
+      }
 
       // Show unlock overlay
       this.setData({ showUnlock: true });
@@ -766,7 +854,8 @@ Page({
     // Update score and max level
     this.setData({
       score: score,
-      maxLevelReached: maxLevelReached
+      maxLevelReached: maxLevelReached,
+      rankTitle: this.getRankTitle(maxLevelReached) // 更新官衔
     });
   },
 
@@ -819,6 +908,30 @@ Page({
     // Reset game state
     this.initGame();
     this.playBGM();
+  },
+
+  /**
+   * 切换音效开关
+   */
+  toggleSound() {
+    const newState = !this.data.soundEnabled;
+    this.setData({
+      soundEnabled: newState
+    });
+    
+    if (newState) {
+      // 开启音效，恢复背景音乐
+      this.playBGM();
+    } else {
+      // 关闭音效，停止所有音频
+      if (this.bgmAudio) {
+        try {
+          this.bgmAudio.stop();
+        } catch (err) {
+          console.error('Failed to stop BGM:', err);
+        }
+      }
+    }
   },
 
   /**
